@@ -5,6 +5,10 @@ This project was developed as part of the Visualization course and implemented i
 The core of the assignment was to implement GPU-based raycasting to visualize 3D medical volume data, alongside a set of interactive tools for exploration and analysis.
 All project requirements are based on the official assignment document.
 
+Programming langauge used: HTML, CSS, JavaScript, Shading Language.
+
+<img width="933" height="408" alt="image" src="https://github.com/user-attachments/assets/dc55d411-063f-4146-b855-17672dfff13f" />
+
 ## Features Implemented
 ### 1. Direct Volume Rendering (Raycasting)
 
