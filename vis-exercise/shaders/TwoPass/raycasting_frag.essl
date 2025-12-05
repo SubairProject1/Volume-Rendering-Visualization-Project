@@ -1,0 +1,136 @@
+precision highp int;
+precision highp float;
+precision highp sampler3D;
+
+uniform sampler2D tFront;
+uniform sampler2D tBack;
+
+uniform float stepSize;
+
+uniform sampler3D volumeData;
+uniform vec3 size;
+
+uniform sampler2D transfareFunction;
+
+varying vec2 vUv;
+
+out vec4 fragColor;
+
+uniform bool mip;
+uniform bool shading;
+
+// Cutting plane information provided by JavaScript
+uniform vec3 u_planeOrigin;  // The origin (center point) of the cutting plane
+uniform vec3 u_planeNormal;  // The direction the plane is "facing" (normal vector)
+uniform bool u_enableCut;
+
+vec4 readVolume(vec3 tc) {
+    return textureLod(volumeData, tc, 0.0);  // immer Base-Level
+}
+
+vec3 gradient(vec3 tc) {
+    float epsX = 1.0 / size.x;
+    float epsY = 1.0 / size.y;
+    float epsZ = 1.0 / size.z;
+
+    float xm = readVolume(tc - vec3(epsX, 0.0, 0.0)).r;
+    float xp = readVolume(tc + vec3(epsX, 0.0, 0.0)).r;
+    float ym = readVolume(tc - vec3(0.0, epsY, 0.0)).r;
+    float yp = readVolume(tc + vec3(0.0, epsY, 0.0)).r;
+    float zm = readVolume(tc - vec3(0.0, 0.0, epsZ)).r;
+    float zp = readVolume(tc + vec3(0.0, 0.0, epsZ)).r;
+
+    float gx = (xp - xm) / (2.0 * epsX);
+    float gy = (yp - ym) / (2.0 * epsY);
+    float gz = (zp - zm) / (2.0 * epsZ);
+
+    return normalize(vec3(gx, gy, gz));
+}
+vec3 applyPhongShading(vec3 baseColor, float alpha, vec3 texCoord, vec3 rayDir) {
+    vec3 normal = gradient(texCoord);
+    vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+    vec3 viewDir = normalize(-rayDir);
+
+    const float ambientStrength = 0.1;
+    const float specularStrength = 0.5;
+    const float shininess = 32.0;
+
+    vec3 ambient = ambientStrength * baseColor;
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = diff * baseColor;
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    vec3 specular = specularStrength * spec * vec3(1.0);
+    return (ambient + diffuse + specular) * alpha;
+}
+
+void main() {
+    //calcualte the entering and leaving position of the ray
+    vec3 frontPosNormalized = texture2D(tFront, vUv).rgb;
+    vec3 backPosNormalized = texture2D(tBack, vUv).rgb;
+    vec3 frontPos = (frontPosNormalized * size) - (size * 0.5);
+    vec3 backPos = (backPosNormalized * size) - (size * 0.5);
+
+    vec3 rayDiff = backPos - frontPos;
+    vec3 rayDir = normalize(rayDiff);
+    float len = length(rayDiff);
+
+    //iterate through ray and find max for Alpha Compositing
+    float curRayPos = 0.0;
+    vec3 CiT = vec3(0, 0, 0);
+    float At = 0.0;
+    float maxIntensity = 0.0;
+
+    while (curRayPos < len) {
+        // Compute sample position along the ray (in world/volume space)
+        vec3 samplePos = backPos + (-rayDir * curRayPos);
+
+        // --- Cutting plane logic START ---
+        // Compute vector from plane origin to current sample point
+        if (u_enableCut) {
+            vec3 toSample = samplePos - u_planeOrigin;
+
+            // Dot product gives signed distance from sample to plane
+            float d = dot(toSample, u_planeNormal);
+
+            // If sample lies on the back side of the plane, skip it
+            if (d < 0.0) {
+                curRayPos += stepSize;
+                continue;
+            }
+        }
+        // --- Cutting plane logic END ---
+
+        // Convert sample position to texture coordinates [0, 1]
+        vec3 texCoord = (samplePos + size * 0.5) / size;
+        float curIntensity = readVolume(texCoord).r;
+
+        if (!mip) {
+            vec4 tf = texture(transfareFunction, vec2(curIntensity, 0));
+            vec3 color = vec3(tf);
+
+            if (shading) {
+                color = applyPhongShading(color, tf.w, texCoord, rayDir);
+            } else {
+                color *= tf.w;
+            }
+
+            CiT = color + (1.0 - tf.w) * CiT;
+            At = tf.w + (1.0 - tf.w) * At;
+
+        } else {
+            if (curIntensity >= maxIntensity) {
+                CiT = vec3(curIntensity);
+                maxIntensity = curIntensity;
+            }
+        }
+
+        curRayPos += stepSize;
+    }
+
+    if(mip) {
+        fragColor = vec4(CiT, 1);
+    } else {
+        fragColor = vec4(CiT, At);
+    }
+}

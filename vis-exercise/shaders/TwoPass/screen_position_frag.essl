@@ -1,0 +1,14 @@
+
+precision highp int;
+precision highp float;
+
+varying  vec3 vPosition;
+
+uniform vec3 size;
+
+out vec4 fragColor;
+void main(){
+    #This is remapping the coordinates from the range [-size/2, size/2] to [0, 1].
+    vec3 normalizedPos = (vPosition.xyz + (size*0.5) ) / size;
+    fragColor = vec4(normalizedPos, 1.0);
+}   

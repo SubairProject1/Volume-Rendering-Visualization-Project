@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Vis1</title>
+
+    <link rel="stylesheet" type="text/css" href="style.css" />
+
+    <!-- include THREE.js -->
+    <script src="three.js/build/three.js"></script>
+
+    <!-- include d3.js -->
+    <script src="d3.js/d3.v7.js"></script>
+
+    <!-- include Vis1 script -->
+    <script src="js/histogram.js"></script>
+    <script src="js/shader.js"></script>
+    <script src="js/testShader.js"></script>
+    <script src="js/volume.js"></script>
+    <script src="js/camera.js"></script>
+    <script src="js/vis1.js"></script>
+
+    <script src="js/Twopass/ScreenPositionShader.js"></script>
+    <script src="js/Twopass/RaycastingShader.js"></script>
+    <script src="js/Twopass/TwoPassRaycasting.js"></script>
+
+    <script src="js/UI/TransfareFunctionPicker.js"></script>
+
+    <script src="js/CuttingPlane/CuttingPlaneRender.js"></script>
+  </head>
+
+  <!-- call init function when page has loaded -->
+  <body onload="init()">
+    <h1>Vis1 Exercise</h1>
+    <h2>Maximilian Fischer | Christoph Haider | Subair Kirimow </h2>
+
+    <!-- data selector -->
+    <p>Select your data here: <input id="upload" type="file" /></p>
+
+    <div class="container">
+      <div id="tfContainer">
+        <div class="inputRow">
+          <div class="inputElement">
+            <label>Plane Height:</label>
+            <input
+              id="iEditorHeight"
+              type="range"
+              min="0"
+              max="1"
+              value=".5"
+              step=".001"
+              onchange="iEditorValueChanged()"
+            />
+          </div>
+          <div class="inputElement">
+            <label>Plane Rotation (X):</label>
+            <input
+              id="iEditorXRotate"
+              type="range"
+              min="0"
+              max="180"
+              value="0"
+              onchange="iEditorValueChanged()"
+            />
+          </div>
+          <div class="inputElement">
+            <label>Plane Rotation (Y):</label>
+            <input
+              id="iEditorYRotate"
+              type="range"
+              min="0"
+              max="180"
+              value="0"
+              onchange="iEditorValueChanged()"
+            />
+          </div>
+        </div>
+        <div class="inputRow">
+          <div class="inputElement">
+            <label>Plane Color:</label>
+            <input
+              id="iEditorColor"
+              type="color"
+              value="#ffffff"
+              onchange="iEditorValueChanged()"
+            />
+          </div>
+          <div class="inputElement">
+            <label>Flip Render Plane:</label>
+            <input
+              id="iEditorRenderFlip"
+              type="button"
+              value="Flip Plane"
+              onclick="flipRenderPlane()"
+            />
+          </div>
+          <div class="inputElement">
+            <label>Show Cutting Plane:</label>
+              <input
+                id="iEditorShowPlane"
+                type="checkbox"
+                checked
+                onchange="togglePlaneVisibility()"
+              />
+          </div>
+          <div class="inputElement">
+            <label>Enable Volume Cut:</label>
+              <input
+                id="iEditorEnableCut"
+                type="checkbox"
+                checked
+                onchange="toggleVolumeCut()"
+              />
+          </div>
+        </div>
+        <div class="inputRow">
+          <label class="lh">Transefare Function Color</label>
+          <div id="transfareFunctionPicker" class="picker">
+            <div class="transfareFunctionBackground"></div>
+            <template id="colorHandle">
+              <input
+                draggable="true"
+                type="color"
+                class="transfareFunctionColorPicker"
+                id="head"
+                value="#ffffff"
+              />
+            </template>
+            <input type="checkbox" class="pickerCheck" />
+          </div>
+        </div>
+        <div class="inputRow">
+          <label class="lh">Transefare Function Alpha</label>
+          <div id="transfareFunctionPicker2" class="picker">
+            <div class="transfareFunctionBackground">
+              <input draggable="true" type="color" class="transfareFunctionColorPicker" id="head" value="#00000" style="left: 12.2786%; top: 10%; background: rgb(0, 0, 0);">
+              <input draggable="true" type="color" class="transfareFunctionColorPicker" id="head" value="#ffffff" style="left: 90.9375%; top: 10%; background: rgb(255, 255, 255);">
+            </div>
+            <template id="colorHandle">
+              <input
+                draggable="true"
+                type="color"
+                class="transfareFunctionColorPicker"
+                id="head"
+                value="#ffffff"
+              />
+            </template>
+            <input type="checkbox" class="pickerCheck"/>
+          </div>
+        </div>
+        <div class="inputRow">
+            <label class="lh">use MIP</label>
+            <input type="checkbox"  id="mip" class="pickerCheck"/>
+
+            <label class="lh">use shading</label>
+            <input type="checkbox" id="shading" class="pickerCheck" checked />
+          </div>
+          <div id="viewport">
+            <!-- volume rendering container -->
+            <div id="viewContainer"></div>
+          </div>
+        </div>
+        <div id="histContainer"></div>
+      </div>
+        
+      </div>
+    </div>
+    
+      <!-- container for interactive transfer function 
+      
+      -->
+  </body>
+</html>
